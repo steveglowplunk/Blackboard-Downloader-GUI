@@ -9,7 +9,7 @@ Install JDK 17 from here:
 https://www.oracle.com/java/technologies/downloads/#java17  
 (Yes, Java 8 won't work)
 
-Supported platforms: Current only Windows.  
+Supported platforms: Currently only Windows.  
 Tested on Windows 10 with JDK 17.0.8
 
 Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases/tag/Release).  

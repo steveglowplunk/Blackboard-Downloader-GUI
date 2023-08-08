@@ -1,7 +1,5 @@
 package me.marnic.jdl;
 
-import com.bbdownloader.blackboarddownloadergui.CommonUtils;
-
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +23,7 @@ public class Downloader {
     private boolean bIsCancelled = false;
 
     public Downloader(boolean createDefaultHandler) {
-        if(createDefaultHandler) {
+        if (createDefaultHandler) {
             downloadHandler = new DownloadHandler(this) {
                 @Override
                 public void onDownloadStart() {
@@ -46,7 +44,7 @@ public class Downloader {
     }
 
     public Downloader(boolean createDefaultHandler, String cookiesLocation, String domainFilter) {
-        if(createDefaultHandler) {
+        if (createDefaultHandler) {
             downloadHandler = new DownloadHandler(this) {
                 @Override
                 public void onDownloadStart() {
@@ -183,16 +181,17 @@ public class Downloader {
 
             downloadHandler.onDownloadStart();
 
-            while (!bIsCancelled && (length = in.read(data,0,1024))!=-1)  {
-                out.write(data,0,length);
-                downloadedBytes+=length;
+            while (!bIsCancelled && (length = in.read(data, 0, 1024)) != -1) {
+                out.write(data, 0, length);
+                downloadedBytes += length;
             }
 
             out.flush();
             in.close();
             out.close();
 
-            resetValues(); // for repeated use of the same downloader object, in order to get correct download speed values
+            resetValues(); // for repeated use of the same downloader object, in order to get correct download speed
+            // values
             downloadHandler.onDownloadFinish();
         } catch (Exception e) {
             e.printStackTrace();
@@ -203,7 +202,7 @@ public class Downloader {
     public String downloadJSONString(String urlStr) {
         try {
             URL url = new URL(urlStr);
-            HttpURLConnection con = null;
+            HttpURLConnection con;
             if (bUseCookies) {
                 con = (HttpURLConnection) setupConnectionWithCookies(cookiesMap, urlStr);
             } else {
@@ -214,11 +213,11 @@ public class Downloader {
             downloadLength = con.getContentLength();
 
             InputStream in = con.getInputStream();
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = br.readLine()) != null) {
-                sb.append(line+"\n");
+                sb.append(line).append("\n");
             }
             br.close();
             return sb.toString();
@@ -247,15 +246,15 @@ public class Downloader {
 
             downloadHandler.onDownloadStart();
 
-            while ((length = in.read(data,0,1024))!=-1)  {
-                downloadedBytes+=length;
+            while ((length = in.read(data, 0, 1024)) != -1) {
+                downloadedBytes += length;
             }
 
             in.close();
 
             downloadHandler.onDownloadFinish();
             return in.readObject();
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             downloadHandler.onDownloadError();
         }

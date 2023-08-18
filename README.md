@@ -5,14 +5,14 @@ Only works for CUHK's Blackboard platform.
 Note: This programme is NOT produced by CUHK  
 
 ## Setup
-Install JDK 17 from here:  
+Supported platform: Currently only Windows.  
+Tested on Windows 10 with JDK 17.0.8  
+
+1. Install JDK 17 from here:  
 https://www.oracle.com/java/technologies/downloads/#java17  
 (Yes, Java 8 won't work)
 
-Supported platforms: Currently only Windows.  
-Tested on Windows 10 with JDK 17.0.8
-
-Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases).  
+1. Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases).  
 
 ## Usage  
 

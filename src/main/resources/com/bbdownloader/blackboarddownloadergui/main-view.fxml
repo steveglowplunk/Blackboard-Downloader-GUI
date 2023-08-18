@@ -16,13 +16,13 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane fx:id="anchorPane_MainWindow" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bbdownloader.blackboarddownloadergui.MainController">
+<AnchorPane fx:id="anchorPane_MainWindow" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="550.0" minWidth="800.0" prefHeight="550.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bbdownloader.blackboarddownloadergui.MainController">
    <children>
       <MenuBar layoutY="1.0" prefHeight="26.0" prefWidth="800.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <menus>
           <Menu mnemonicParsing="false" text="File">
             <items>
-                  <MenuItem fx:id="menuItem_OpenCookie" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" text="Open Cookie File..." />
+                  <MenuItem fx:id="menuItem_OpenCookie" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" text="Load Cookies File For Login..." />
                   <SeparatorMenuItem mnemonicParsing="false" />
               <MenuItem fx:id="menuItem_Close" mnemonicParsing="false" onAction="#on_menuItem_Close_clicked" text="Close" />
             </items>
@@ -49,7 +49,7 @@
             </VBox>
             <VBox fx:id="vbox_ButtonList" prefHeight="217.0" prefWidth="265.0" spacing="20.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="500.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="40.0">
                <children>
-                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" prefHeight="60.0" text="Load Cookies File" />
+                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" prefHeight="60.0" text="Load Cookies File For Login..." />
                   <Button fx:id="btn_LoadCourse" disable="true" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_LoadCourse_clicked" prefHeight="60.0" text="Load Course Content &gt;" />
                </children>
             </VBox>
@@ -60,11 +60,11 @@
             <HBox fx:id="hbox_CourseContentHeader" alignment="CENTER" layoutX="20.0" layoutY="8.0" prefHeight="24.0" prefWidth="450.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="330.0" AnchorPane.topAnchor="8.0">
                <children>
                   <Label fx:id="hBox_retrieveStatus" text="Course Content" />
-                  <Pane prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
+                  <Pane HBox.hgrow="ALWAYS" />
                   <HBox fx:id="hBox_RetrieveStatus" alignment="CENTER" fillHeight="false" spacing="10.0">
                      <children>
                         <ProgressIndicator prefHeight="24.0" prefWidth="24.0" />
-                        <Label text="Retrieving file names..." />
+                        <Label text="Retrieving file information..." />
                      </children>
                   </HBox>
                </children>
@@ -84,8 +84,14 @@
                   <Label text="Selected Item Details:" />
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
-                        <Label text="Item Name:" />
-                        <TextField fx:id="textField_SelectedItemName" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="None Selected" HBox.hgrow="ALWAYS" />
+                        <Label text="Displayed Name:" />
+                        <TextField fx:id="textField_SelectedDisplayedName" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="None Selected" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="214.0" spacing="5.0">
+                     <children>
+                        <Label text="Server Name:" />
+                        <TextField fx:id="textField_SelectedServerName" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="None Selected" HBox.hgrow="ALWAYS" />
                      </children>
                   </HBox>
                   <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="200.0" spacing="5.0">
@@ -94,8 +100,21 @@
                         <TextField fx:id="textField_SelectedURL" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="None Selected" HBox.hgrow="ALWAYS" />
                      </children>
                   </HBox>
+                  <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="242.0" spacing="5.0">
+                     <children>
+                        <Label text="File Size:" />
+                        <TextField fx:id="textField_SelectedFileSize" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="None Selected" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
                   <Separator layoutX="10.0" layoutY="172.0" />
                   <Label fx:id="label_NumOfSelectedItems" text="0 Files Selected" />
+                  <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="270.0" spacing="5.0">
+                     <children>
+                        <Label text="Total File Size:" />
+                        <TextField fx:id="textField_TotalFileSize" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="No data yet" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <Button fx:id="btn_RefreshTotalFileSize" mnemonicParsing="false" onAction="#on_btn_RefreshTotalFileSize_clicked" text="🔄 Refresh Total File Size" />
                </children>
             </VBox>
             <Button fx:id="btn_OpenCourseList" alignment="CENTER" contentDisplay="CENTER" layoutX="618.0" layoutY="424.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_OpenCourseList_clicked" text="&lt; Go Back to Course List" AnchorPane.bottomAnchor="24.4" AnchorPane.rightAnchor="35.599999999999994" />

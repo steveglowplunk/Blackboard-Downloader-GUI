@@ -25,18 +25,29 @@ public class CommonUtils {
         return temp;
     }
 
-    public boolean hasConnection(String destinationURL, HashMap<String, String> loadedCookies) throws IOException {
+    public boolean hasConnection(String destinationURL, HashMap<String, String> loadedCookies, boolean bShowGUIWarnings) throws IOException {
         try {
             Connection.Response response =
                     Jsoup.connect(destinationURL).cookies(loadedCookies).timeout(10000).followRedirects(false).ignoreContentType(true).execute();
-//            System.out.println("check if internet available : " + response.statusCode());
             boolean bValidConnection = (response.statusCode() != 302);
-            if (!bValidConnection) {
+            if (!bValidConnection && bShowGUIWarnings) {
                 customWarning("Unexpected HTML response code received. Response code: " + response.statusCode());
             }
-            return bValidConnection; // status codes other than 302 may indicate valid connection
-        } catch (UnknownHostException | HttpStatusException e) {
-            customWarning("Blackboard unreachable. Possibly cookies have expired, or there is no Internet connection");
+            return bValidConnection; // any status codes other than 302 may indicate invalid connection
+        } catch (UnknownHostException e) {
+            if (bShowGUIWarnings) {
+                customWarning("Blackboard unreachable. Possibly there is no Internet connection.");
+            }
+            return false;
+        } catch (HttpStatusException e) {
+            if (bShowGUIWarnings) {
+                customWarning("Blackboard unreachable. Possibly cookies have expired.");
+            }
+            return false;
+        } catch (Exception e) {
+            if (bShowGUIWarnings) {
+                customWarning("Unexpected connection related issue.");
+            }
             return false;
         }
     }

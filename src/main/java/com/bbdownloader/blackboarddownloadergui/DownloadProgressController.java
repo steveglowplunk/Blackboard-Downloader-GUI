@@ -45,7 +45,7 @@ public class DownloadProgressController {
         Platform.runLater(() -> {
             label_status.setText("Starting download...");
             label_FileName.setText("No files are downloading");
-            label_Speed.setText("0.0 MB/s");
+            label_Speed.setText("0.00 MB/s");
             label_percentage.setText("0%");
             pBar_downloadProgress.setProgress(0);
             disableBtn_close(true);

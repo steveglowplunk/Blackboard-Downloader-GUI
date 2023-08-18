@@ -30,8 +30,15 @@ import org.jsoup.select.Elements;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MainController {
     @FXML
@@ -55,34 +62,27 @@ public class MainController {
     @FXML
     private Button btn_LoadCourse;
 
-    private File cookieFile;
-    private String cookiesLocation;
-    private Downloader downloader;
-    private final String domainFilter = "blackboard.cuhk.edu.hk";
-    private HashMap<String, String> loadedCookies;
-    private CommonUtils commonUtils = new CommonUtils();
-    private JSONObject userInfo, courseListObj;
-    private JSONArray courseList;
-    private String userID;
-    private ChangeListener<Scene> windowExistsListener;
-    private ChangeListener<Number> windowSizeListener_MainContentContainer;
-    private String selectedHomePageURL, selectedCourseName;
+    enum Pages {
+        COURSE_LIST, COURSE_CONTENT
+    }
 
+    private Downloader downloader;
+    private final CommonUtils commonUtils = new CommonUtils();
+    private String selectedHomePageURL, selectedCourseName;
 
 //    -------------------------------------
     // MainContentContainer
 //    -------------------------------------
 
-
     public void initialize() {
         // set up UI component resize by percentage
         hBox_RetrieveStatus.setVisible(false);
 
-        windowSizeListener_MainContentContainer = (observable2, oldValue2, newValue2) -> {
+        ChangeListener<Number> windowSizeListener_MainContentContainer = (observable2, oldValue2, newValue2) -> {
             updateWidthConstraints_MainContentContainer(newValue2.doubleValue());
             updateWidthConstraints_CourseContentContainer(newValue2.doubleValue());
         };
-        windowExistsListener = new ChangeListener<>() {
+        ChangeListener<Scene> windowExistsListener = new ChangeListener<>() {
             @Override
             public void changed(ObservableValue observable, Scene oldScene, Scene newScene) {
                 if (newScene != null) {
@@ -96,18 +96,14 @@ public class MainController {
     }
 
     private void updateWidthConstraints_MainContentContainer(double width) {
-        AnchorPane.setRightAnchor(vbox_CourseTreeHolder, commonUtils.calcPercentage(width, 0.6, 10,
-                "vbox_CourseTreeHolder"));
+        AnchorPane.setRightAnchor(vbox_CourseTreeHolder, commonUtils.calcPercentage(width, 0.6, 10, "vbox_CourseTreeHolder"));
         AnchorPane.setLeftAnchor(vbox_ButtonList, commonUtils.calcPercentage(width, 0.4, 20, "vbox_ButtonList"));
     }
 
     private void updateWidthConstraints_CourseContentContainer(double width) {
-        AnchorPane.setRightAnchor(vbox_CourseContentTreeHolder, commonUtils.calcPercentage(width, 0.6, 10,
-                "vbox_CourseContentTreeHolder"));
-        AnchorPane.setRightAnchor(hbox_CourseContentHeader, commonUtils.calcPercentage(width, 0.6, 10,
-                "hbox_CourseContentHeader"));
-        AnchorPane.setLeftAnchor(vbox_ButtonList_CourseContentContainer, commonUtils.calcPercentage(width, 0.4, 20,
-                "vbox_ButtonList_CourseContentContainer"));
+        AnchorPane.setRightAnchor(vbox_CourseContentTreeHolder, commonUtils.calcPercentage(width, 0.6, 10, "vbox_CourseContentTreeHolder"));
+        AnchorPane.setRightAnchor(hbox_CourseContentHeader, commonUtils.calcPercentage(width, 0.6, 10, "hbox_CourseContentHeader"));
+        AnchorPane.setLeftAnchor(vbox_ButtonList_CourseContentContainer, commonUtils.calcPercentage(width, 0.4, 20, "vbox_ButtonList_CourseContentContainer"));
     }
 
     @FXML
@@ -115,32 +111,35 @@ public class MainController {
         // load cookies into downloader object and retrieve course list
         FileChooser fc = new FileChooser();
         fc.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("txt files", "*.txt"));
-        cookieFile = fc.showOpenDialog(null);
+        File cookieFile = fc.showOpenDialog(null);
 
         if (cookieFile != null) {
-            cookiesLocation = cookieFile.getAbsolutePath();
-            downloader = new Downloader(true, cookiesLocation, domainFilter);
-            loadedCookies = downloader.getCookiesMap();
-            if (!loadedCookies.isEmpty()) {
-                if (!commonUtils.hasConnection("https://blackboard.cuhk.edu.hk/learn/api/v1/users/me", loadedCookies)) {
+            downloader = new Downloader(true);
+            downloader.setDomainFilter("blackboard.cuhk.edu.hk");  // ensures cookies file comes from blackboard
+            downloader.setCookies(cookieFile);
+            if (!downloader.getCookiesMap().isEmpty()) {
+                if (!commonUtils.hasConnection("https://blackboard.cuhk.edu.hk/learn/api/v1/users/me", downloader.getCookiesMap(), true)) {
                     return;
                 }
-                String tempDownloadJSONString = downloader.downloadJSONString("https://blackboard.cuhk.edu" +
-                        ".hk/learn/api/v1/users/me");
+                String tempDownloadJSONString = downloader.downloadJSONString(
+                        "https://blackboard.cuhk.edu.hk/learn/api/v1/users/me"
+                );
                 if (tempDownloadJSONString != null && !tempDownloadJSONString.isEmpty()) {
-                    userInfo = new JSONObject(tempDownloadJSONString);
-                    userID = userInfo.get("id").toString();
-                    String courseListURL = "https://blackboard.cuhk.edu.hk/learn/api/v1/users/" + userID +
-                            "/memberships?expand=course.effectiveAvailability,course.permissions," +
-                            "courseRole&includeCount=true&limit=10000";
-                    courseListObj = new JSONObject(downloader.downloadJSONString(courseListURL));
-                    courseList = courseListObj.getJSONArray("results");
+                    JSONObject userInfo = new JSONObject(tempDownloadJSONString);
+                    String userID = userInfo.get("id").toString();
+                    String courseListURL =
+                            "https://blackboard.cuhk.edu.hk/learn/api/v1/users/" + userID +
+                                    "/memberships?expand=course.effectiveAvailability,course.permissions,courseRole" +
+                                    "&includeCount=true&limit=10000";
+                    JSONObject courseListObj = new JSONObject(downloader.downloadJSONString(courseListURL));
+                    JSONArray courseList = courseListObj.getJSONArray("results");
                     ArrayList<CourseRecord> courseRecords = new ArrayList<>();
                     for (int i = 0; i < courseList.length(); i++) {
-                        courseRecords.add(new CourseRecord(courseList.getJSONObject(i).getJSONObject("course").get(
-                                "isAvailable").toString().equals("true"), courseList.getJSONObject(i).getJSONObject(
-                                        "course").get("displayName").toString(),
-                                courseList.getJSONObject(i).getJSONObject("course").get("homePageUrl").toString()));
+                        courseRecords.add(new CourseRecord(
+                                courseList.getJSONObject(i).getJSONObject("course").get("isAvailable").toString().equals("true"),
+                                courseList.getJSONObject(i).getJSONObject("course").get("displayName").toString(),
+                                courseList.getJSONObject(i).getJSONObject("course").get("homePageUrl").toString())
+                        );
                     }
 
                     ListView<CourseRecord> listView_courseTree = new ListView<>();
@@ -151,16 +150,15 @@ public class MainController {
                         }
                     }
 
-                    // listen for item selection
-                    listView_courseTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue,
-                                                                                                newValue) -> {
+                    // listen for list item selection
+                    listView_courseTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
                         CourseRecord selectedCourseRecord = listView_courseTree.getSelectionModel().getSelectedItem();
-//                        System.out.println(selectedCourseRecord.detailedInfo());
                         selectedHomePageURL = selectedCourseRecord.getHomePageUrl();
                         selectedCourseName = selectedCourseRecord.getDisplayName();
                         btn_LoadCourse.setDisable(false);
                     });
 
+                    // replace placeholder with tree in UI
                     vbox_CourseTreeHolder.getChildren().clear();
                     VBox.setVgrow(listView_courseTree, Priority.ALWAYS);
                     vbox_CourseTreeHolder.getChildren().add(listView_courseTree);
@@ -179,16 +177,16 @@ public class MainController {
         stage.close();
     }
 
-    public void loadPage(int option) {
+    private void loadPage(Pages option) {
         switch (option) {
-            case 0:
+            case COURSE_LIST -> {
                 anchorPane_CourseContentContainer.setVisible(false);
                 anchorPane_MainContentContainer.setVisible(true);
                 if (fileDownloadProgressStage != null) {
                     fileDownloadProgressStage.close();
                 }
-                break;
-            case 1:
+            }
+            case COURSE_CONTENT -> {
                 anchorPane_MainContentContainer.setVisible(false);
                 anchorPane_CourseContentContainer.setVisible(true);
                 try {
@@ -196,18 +194,14 @@ public class MainController {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                break;
-            default: {
-//                System.out.println("option out of bounds");
-                break;
             }
         }
 
     }
 
     @FXML
-    void on_btn_LoadCourse_clicked(ActionEvent event) throws IOException {
-        loadPage(1);
+    void on_btn_LoadCourse_clicked(ActionEvent event) {
+        loadPage(Pages.COURSE_CONTENT);
     }
 
 //    -------------------------------------
@@ -227,10 +221,19 @@ public class MainController {
     private TextField textField_SelectedDownloadPath;
 
     @FXML
-    private TextField textField_SelectedItemName;
+    private TextField textField_SelectedDisplayedName;
+
+    @FXML
+    private TextField textField_SelectedServerName;
 
     @FXML
     private TextField textField_SelectedURL;
+
+    @FXML
+    private TextField textField_SelectedFileSize;
+
+    @FXML
+    private TextField textField_TotalFileSize;
 
     @FXML
     private HBox hBox_RetrieveStatus;
@@ -249,22 +252,47 @@ public class MainController {
     private FolderNode rootFolderNode;
     private CheckBoxTreeItem<FolderFileWrapper> ti_courseContentRoot;
     private ArrayList<FolderFileWrapper> filesToDownloadList = new ArrayList<>();
-    private Service loadCourseContentService;
-    private Service downloadFileService;
+    private Service<Void> downloadFileService;
     private DownloadProgressController downloadProgressController;
     private Stage fileDownloadProgressStage;
     private boolean bDirectoryChooserCancelled = false;
 
-    void on_CourseContentContainer_opened() throws IOException {
+    void on_CourseContentContainer_opened() throws InterruptedException, IOException {
+        reset_courseContent_pageValues();
+        vbox_CourseContentTreeHolder.getChildren().get(0).setDisable(true);  // disable file tree UI until finished loading
+        if (!commonUtils.hasConnection("https://blackboard.cuhk.edu.hk/learn/api/v1/users/me", downloader.getCookiesMap(), true)) {
+            return;
+        }
         hBox_RetrieveStatus.setVisible(true);
-        vbox_CourseContentTreeHolder.getChildren().get(0).setDisable(true);
-
-        loadCourseContentService = new Service<Void>() {
+        AtomicReference<String> selectedURL = new AtomicReference<>();
+        Service<Void> loadSingleFileInfoService = new Service<Void>() {
             @Override
             protected Task<Void> createTask() {
                 return new Task<>() {
                     @Override
                     protected Void call() throws IOException {
+                        if (selectedURL.get() != null && (!selectedURL.get().contains("listContent") && !selectedURL.get().contains("execute"))) {  // exclude folders
+                            textField_SelectedFileSize.setText("Loading...");
+                            textField_SelectedServerName.setText("Loading...");
+                            String fileSize = SizeUtil.toHumanReadableFromBytes(downloader.getDownloadLength(selectedURL.get()));
+                            String serverName = downloader.getServerFileName(selectedURL.get());
+                            textField_SelectedFileSize.setText(fileSize);
+                            textField_SelectedServerName.setText(serverName);
+                        } else {
+                            textField_SelectedFileSize.setText("No size");
+                        }
+                        return null;
+                    }
+                };
+            }
+        };
+
+        Service<Void> loadCourseContentService = new Service<>() {
+            @Override
+            protected Task<Void> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected Void call() {
                         visitedFolderLinks.clear();
 
                         // extract folders and files from course home page
@@ -274,17 +302,16 @@ public class MainController {
                         ti_courseContentRoot = new CheckBoxTreeItem<>(rootFolderNode);
                         ti_courseContentRoot.setExpanded(true);
 
-                        if (rootFolderNode.getFolderNodeList().size() != 0) {
+                        if (!rootFolderNode.getFolderNodeList().isEmpty()) {
                             for (FolderNode tempFolderNode : rootFolderNode.getFolderNodeList()) {
-                                // populate ti_courseContentRoot using rootFolderNode
+                                // populate ti_courseContentRoot by traversing each folder under rootFolderNode
                                 createFolderTree(ti_courseContentRoot, tempFolderNode);
                             }
 
-                            CheckTreeView<FolderFileWrapper> cTreeView_fileTree =
-                                    new CheckTreeView<>(ti_courseContentRoot);
+                            CheckTreeView<FolderFileWrapper> cTreeView_fileTree = new CheckTreeView<>(ti_courseContentRoot);
+                            // listen for checkboxes being checked
                             cTreeView_fileTree.getCheckModel().getCheckedItems().addListener((ListChangeListener<TreeItem<FolderFileWrapper>>) c -> {
-                                ObservableList<TreeItem<FolderFileWrapper>> checkedItemList =
-                                        cTreeView_fileTree.getCheckModel().getCheckedItems();
+                                ObservableList<TreeItem<FolderFileWrapper>> checkedItemList = cTreeView_fileTree.getCheckModel().getCheckedItems();
                                 filesToDownloadList.clear();
                                 for (TreeItem<FolderFileWrapper> tempCheckedItem : checkedItemList) {
                                     if (!tempCheckedItem.getValue().isFolder()) { // if checked item is file
@@ -292,15 +319,18 @@ public class MainController {
                                     }
                                 }
                                 label_NumOfSelectedItems.setText(filesToDownloadList.size() + " Files Selected");
-//                                System.out.println(filesToDownloadList);
+                                if (!filesToDownloadList.isEmpty() && (downloadPath != null && !downloadPath.isEmpty())) {
+                                    btn_DownloadFiles.setDisable(false);
+                                }
                             });
-                            cTreeView_fileTree.getSelectionModel().selectedItemProperty().addListener((observable,
-                                                                                                       oldValue,
-                                                                                                       newValue) -> {
+
+                            // listen for list item selection
+                            cTreeView_fileTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
                                 Platform.runLater(() -> {
-                                    textField_SelectedItemName.setText(newValue.getValue().getDisplayedName());
+                                    textField_SelectedDisplayedName.setText(newValue.getValue().getDisplayedName());
                                     textField_SelectedURL.setText(newValue.getValue().getUrl());
-                                    ;
+                                    selectedURL.set(newValue.getValue().getUrl());
+                                    loadSingleFileInfoService.restart();
                                 });
                             });
 
@@ -316,7 +346,6 @@ public class MainController {
                             });
                         }
 
-//                        System.out.println("traverse folders finished");
                         hBox_RetrieveStatus.setVisible(false);
                         return null;
                     }
@@ -327,18 +356,54 @@ public class MainController {
         loadCourseContentService.start();
     }
 
-    private void traverseFolder(FolderNode folderNode, String lastLevelFolderName) throws IOException {
+    private ArrayList<FolderFileWrapper> filesToDownloadList_copy;
+    private int filesToDownloadListSize_copy;
+    private volatile boolean bLoadTotalFileSizeService_cancelled = false;
+
+    private void loadTotalDownloadSize() {
+        AtomicInteger downloadSizeInBytes = new AtomicInteger();
+        ExecutorService executor = Executors.newFixedThreadPool(5);  // get 5 file sizes at a time to avoid congestion
+
+        List<Callable<Void>> tasks = new ArrayList<>();
+        for (int i = 0; i < filesToDownloadListSize_copy; i++) {
+            final int index = i;
+            Callable<Void> task = () -> {
+                if (Thread.currentThread().isInterrupted() || bLoadTotalFileSizeService_cancelled) {
+                    return null;
+                }
+                if (!filesToDownloadList_copy.get(index).isFolder()) {
+                    downloadSizeInBytes.addAndGet(downloader.getDownloadLength(filesToDownloadList_copy.get(index).getUrl()));
+                }
+                return null;
+            };
+            tasks.add(task);
+        }
+
+        try {
+            executor.invokeAll(tasks);
+            executor.shutdownNow();
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+            textField_TotalFileSize.setText(SizeUtil.toHumanReadableFromBytes(downloadSizeInBytes.get()));
+        } catch (InterruptedException e) {
+            // shutdown previous executor when previous executor tasks are interrupted,
+            // to allow new loadTotalFileSizeService to start
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void traverseFolder(FolderNode folderNode, String lastLevelFolderName) {
         visitedFolderLinks.add(folderNode.getFolderURL());
-        String currentLevelFolderName = lastLevelFolderName + folderNode.getFolderName() + "\\"; // TODO: PLATFORM
-        // DEPENDENT
+        String currentLevelFolderName = lastLevelFolderName + folderNode.getFolderName() + "\\";
+        // TODO: PLATFORM DEPENDENT
 
         Document doc = null;
 
         try {
-            doc = Jsoup.connect(folderNode.getFolderURL()).cookies(loadedCookies).get();
+            doc = Jsoup.connect(folderNode.getFolderURL()).cookies(downloader.getCookiesMap()).get();
         } catch (RuntimeException | IOException e) {
             e.printStackTrace();
-//            System.out.println("URL provided is invalid");
         }
 
         Elements linkElements = doc.select("a");
@@ -365,10 +430,7 @@ public class MainController {
             }
         }
 
-//        System.out.println("Traversal finished for " + folderNode.getFolderName());
         for (int i = 0; i < folderNode.getFolderNodeList().size(); i++) {
-//            System.out.println("Traversing " + folderNode.getFolderNodeList().get(i).getFolderURL() + ", " +
-//            folderNode.getFolderNodeList().get(i).getFolderName());
             traverseFolder(folderNode.getFolderNodeList().get(i), currentLevelFolderName);
         }
     }
@@ -391,7 +453,11 @@ public class MainController {
     }
 
     @FXML
-    void on_btn_DownloadFiles_clicked(ActionEvent event) {
+    void on_btn_DownloadFiles_clicked(ActionEvent event) throws IOException {
+        if (!commonUtils.hasConnection("https://blackboard.cuhk.edu.hk/learn/api/v1/users/me", downloader.getCookiesMap(), true)) {
+            return;
+        }
+
         if (filesToDownloadList.isEmpty()) {
             commonUtils.customWarning("No files selected for downloading");
             return;
@@ -446,9 +512,8 @@ public class MainController {
             protected Task<Void> createTask() {
                 return new Task<>() {
                     @Override
-                    protected Void call() {
+                    protected Void call() throws UnsupportedEncodingException {
                         if (downloadProgressController == null) {
-//                            System.out.println("download controller is null");
                             return null;
                         }
                         for (int i = 0; i < filesToDownloadList.size(); i++) {
@@ -478,9 +543,9 @@ public class MainController {
                                 public void onDownloadSpeedProgress(int downloaded, int maxDownload, int percent,
                                                                     int bytesPerSec) {
                                     if (isCancelled()) {
-                                        downloader.setbIsCancelled(true);
+                                        downloader.cancelDownload();
                                     }
-                                    String speedText = SizeUtil.toMBFB(bytesPerSec) + " MB/s";
+                                    String speedText = SizeUtil.toHumanReadableFromBytes(bytesPerSec) + "/s";
                                     Platform.runLater(() -> {
                                         downloadProgressController.setLabel_Speed(speedText);
                                         downloadProgressController.setLabel_percentage(percent + "%");
@@ -498,7 +563,8 @@ public class MainController {
                                 }
                             });
 
-                            downloader.downloadFileToLocation(absHref,
+                            downloader.downloadFileToLocation(
+                                    absHref,
                                     downloadPath + filesToDownloadList.get(i).getFolderPath());
                         }
                         if (!isCancelled()) {
@@ -517,9 +583,53 @@ public class MainController {
         downloadFileService.start();
     }
 
+    Service<Void> loadTotalFileSizeService = new Service<Void>() {
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() {
+                    filesToDownloadList_copy = new ArrayList<>(filesToDownloadList);
+                    filesToDownloadListSize_copy = filesToDownloadList_copy.size();
+                    if (!filesToDownloadList_copy.isEmpty()) {
+                        textField_TotalFileSize.setText("Loading... (for " + filesToDownloadListSize_copy + " files)");
+                        loadTotalDownloadSize();
+                    } else {
+                        textField_TotalFileSize.setText("0.00 B");
+                    }
+                    return null;
+                }
+            };
+        }
+    };
+
+    private void cancelLoadTotalFileSizeService() throws InterruptedException {
+        if (loadTotalFileSizeService.isRunning()) {
+            loadTotalFileSizeService.cancel();
+            bLoadTotalFileSizeService_cancelled = true;
+            while (loadTotalFileSizeService.isRunning()) {
+                // Wait for service to be cancelled
+                Thread.sleep(100);
+            }
+            bLoadTotalFileSizeService_cancelled = false;
+        }
+    }
+
+    private void reset_courseContent_pageValues() throws InterruptedException {
+        cancelLoadTotalFileSizeService();
+        textField_SelectedDisplayedName.setText("None Selected");
+        textField_SelectedURL.setText("None Selected");
+        textField_SelectedFileSize.setText("None Selected");
+        label_NumOfSelectedItems.setText("0 Files Selected");
+        textField_TotalFileSize.setText("No data yet");
+
+        filesToDownloadList.clear();
+        btn_DownloadFiles.setDisable(true);
+    }
+
     @FXML
     void on_btn_OpenCourseList_clicked(ActionEvent event) {
-        loadPage(0);
+        loadPage(Pages.COURSE_LIST);
     }
 
     @FXML
@@ -553,5 +663,11 @@ public class MainController {
         aboutStage.setResizable(false);
 
         aboutStage.show();
+    }
+
+    @FXML
+    void on_btn_RefreshTotalFileSize_clicked(ActionEvent event) throws InterruptedException {
+        cancelLoadTotalFileSizeService();
+        loadTotalFileSizeService.restart();
     }
 }

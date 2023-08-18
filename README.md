@@ -12,7 +12,7 @@ https://www.oracle.com/java/technologies/downloads/#java17
 Supported platforms: Currently only Windows.  
 Tested on Windows 10 with JDK 17.0.8
 
-Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases/tag/Release).  
+Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases).  
 
 ## Usage  
 

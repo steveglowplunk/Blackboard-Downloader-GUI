@@ -5,14 +5,19 @@ Only works for CUHK's Blackboard platform.
 Note: This programme is NOT produced by CUHK  
 
 ## Setup
-Install JDK 17 from here:  
-https://www.oracle.com/java/technologies/downloads/#java17  
-(Yes, Java 8 won't work)
+Supported platform: Currently only Windows.  
+Tested on Windows 10 with JDK 17.0.8  
 
-Supported platforms: Currently only Windows.  
-Tested on Windows 10 with JDK 17.0.8
+1. Install a Java Runtime Environment  
+   You'll need a Java 17 JRE (Yes, Java 8 won't work)  
+   You can find one from Azul Zulu:  
+   https://www.azul.com/downloads/?version=java-17-lts&os=windows&package=jre#zulu
+     
+   Alternatively, you can use JDK 17 from Oracle:  
+   https://www.oracle.com/java/technologies/downloads/#java17  
 
-Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases/tag/Release).  
+
+1. Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases).  
 
 ## Usage  
 

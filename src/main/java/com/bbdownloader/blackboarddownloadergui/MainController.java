@@ -618,6 +618,7 @@ public class MainController {
     private void reset_courseContent_pageValues() throws InterruptedException {
         cancelLoadTotalFileSizeService();
         textField_SelectedDisplayedName.setText("None Selected");
+        textField_SelectedServerName.setText("None Selected");
         textField_SelectedURL.setText("None Selected");
         textField_SelectedFileSize.setText("None Selected");
         label_NumOfSelectedItems.setText("0 Files Selected");

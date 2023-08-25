@@ -114,13 +114,14 @@ public class DownloadProgressController {
     }
 
     @FXML
-    void on_btn_abort_clicked(ActionEvent event) {
+    public void on_btn_abort_clicked(ActionEvent event) {
         isCancelled.set(true);
     }
 
     @FXML
     void on_btn_close_clicked(ActionEvent event) {
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+//        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        Stage stage = (Stage) (btn_close.getScene().getWindow());
         stage.close();
     }
 }

@@ -7,6 +7,7 @@ public class FileNode extends FolderFileWrapper {
     private String serverFileName;
     private String displayedName;
     private String folderPath;
+    private int fileSizeInBytes = -1;
 
 
     public FileNode(String url, String serverFileName, String displayedName, String folderPath) {
@@ -32,6 +33,11 @@ public class FileNode extends FolderFileWrapper {
     }
 
     @Override
+    public void setDisplayedName(String name) {
+        this.displayedName = name;
+    }
+
+    @Override
     public String getServerFileName() {
         return serverFileName;
     }
@@ -54,5 +60,15 @@ public class FileNode extends FolderFileWrapper {
     @Override
     public String getFolderPath() {
         return folderPath;
+    }
+
+    @Override
+    public int getFileSizeInBytes() {
+        return fileSizeInBytes;
+    }
+
+    @Override
+    public void setFileSizeInBytes(int sizeInBytes) {
+        this.fileSizeInBytes = sizeInBytes;
     }
 }

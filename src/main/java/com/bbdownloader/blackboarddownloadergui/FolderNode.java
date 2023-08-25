@@ -42,8 +42,13 @@ public class FolderNode extends FolderFileWrapper {
     }
 
     @Override
+    public void setDisplayedName(String name) {
+        this.folderName = name;
+    }
+
+    @Override
     public String toString() {
-        return "\uD83D\uDCC1 " + folderName;
+        return "\uD83D\uDCC1 " + getFolderName();
     }
 
     @Override
@@ -59,5 +64,15 @@ public class FolderNode extends FolderFileWrapper {
     @Override
     public String getFolderPath() {
         return "Is folder";
+    }
+
+    @Override
+    public int getFileSizeInBytes() {
+        return 0;
+    }
+
+    @Override
+    public void setFileSizeInBytes(int sizeInBytes) {
+        System.err.println("Folders cannot have size");
     }
 }

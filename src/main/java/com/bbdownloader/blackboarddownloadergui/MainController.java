@@ -8,6 +8,7 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -17,6 +18,7 @@ import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import me.marnic.jdl.CombinedSpeedProgressDownloadHandler;
 import me.marnic.jdl.Downloader;
 import me.marnic.jdl.SizeUtil;
@@ -33,12 +35,11 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class MainController {
     @FXML
@@ -212,6 +213,12 @@ public class MainController {
     private Button btn_DownloadFiles;
 
     @FXML
+    private Button btn_RefreshTotalFileSize;
+
+    @FXML
+    private Button btn_GetAllFileSize;
+
+    @FXML
     private VBox vbox_ButtonList_CourseContentContainer;
 
     @FXML
@@ -245,17 +252,48 @@ public class MainController {
     private Label label_NumOfSelectedItems;
 
     @FXML
+    private Label label_RetrievingText;
+
+    @FXML
     private Pane pane_veil;
 
     private String downloadPath;
-    private ArrayList<String> visitedFolderLinks = new ArrayList<>();
+    private final ArrayList<String> visitedFolderLinks = new ArrayList<>();
     private FolderNode rootFolderNode;
     private CheckBoxTreeItem<FolderFileWrapper> ti_courseContentRoot;
-    private ArrayList<FolderFileWrapper> filesToDownloadList = new ArrayList<>();
+    private final ArrayList<FolderFileWrapper> filesToDownloadList = new ArrayList<>();
     private Service<Void> downloadFileService;
     private DownloadProgressController downloadProgressController;
     private Stage fileDownloadProgressStage;
     private boolean bDirectoryChooserCancelled = false;
+    FolderFileWrapper selectedFolderOrFile;
+    Service<Void> loadSingleFileInfoService = new Service<Void>() {
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() {
+                    textField_SelectedServerName.setText("Loading...");
+                    if (!selectedFolderOrFile.isFolder()) {
+                        String fileSize;
+                        if (selectedFolderOrFile.getFileSizeInBytes() == -1) {
+                            textField_SelectedFileSize.setText("Loading...");
+                            fileSize = SizeUtil.toHumanReadableFromBytes(downloader.getDownloadLength(selectedFolderOrFile.getUrl()));
+                        } else {
+                            fileSize = SizeUtil.toHumanReadableFromBytes(selectedFolderOrFile.getFileSizeInBytes());
+                        }
+                        textField_SelectedFileSize.setText(fileSize);
+                        String serverName = downloader.getServerFileName(selectedFolderOrFile.getUrl());
+                        textField_SelectedServerName.setText(serverName);
+                    } else {
+                        textField_SelectedFileSize.setText("No size");
+                        textField_SelectedServerName.setText(textField_SelectedDisplayedName.getText());  // folders only have one name
+                    }
+                    return null;
+                }
+            };
+        }
+    };
 
     void on_CourseContentContainer_opened() throws InterruptedException, IOException {
         reset_courseContent_pageValues();
@@ -264,28 +302,6 @@ public class MainController {
             return;
         }
         hBox_RetrieveStatus.setVisible(true);
-        AtomicReference<String> selectedURL = new AtomicReference<>();
-        Service<Void> loadSingleFileInfoService = new Service<Void>() {
-            @Override
-            protected Task<Void> createTask() {
-                return new Task<>() {
-                    @Override
-                    protected Void call() throws IOException {
-                        if (selectedURL.get() != null && (!selectedURL.get().contains("listContent") && !selectedURL.get().contains("execute"))) {  // exclude folders
-                            textField_SelectedFileSize.setText("Loading...");
-                            textField_SelectedServerName.setText("Loading...");
-                            String fileSize = SizeUtil.toHumanReadableFromBytes(downloader.getDownloadLength(selectedURL.get()));
-                            String serverName = downloader.getServerFileName(selectedURL.get());
-                            textField_SelectedFileSize.setText(fileSize);
-                            textField_SelectedServerName.setText(serverName);
-                        } else {
-                            textField_SelectedFileSize.setText("No size");
-                        }
-                        return null;
-                    }
-                };
-            }
-        };
 
         Service<Void> loadCourseContentService = new Service<>() {
             @Override
@@ -309,30 +325,7 @@ public class MainController {
                             }
 
                             CheckTreeView<FolderFileWrapper> cTreeView_fileTree = new CheckTreeView<>(ti_courseContentRoot);
-                            // listen for checkboxes being checked
-                            cTreeView_fileTree.getCheckModel().getCheckedItems().addListener((ListChangeListener<TreeItem<FolderFileWrapper>>) c -> {
-                                ObservableList<TreeItem<FolderFileWrapper>> checkedItemList = cTreeView_fileTree.getCheckModel().getCheckedItems();
-                                filesToDownloadList.clear();
-                                for (TreeItem<FolderFileWrapper> tempCheckedItem : checkedItemList) {
-                                    if (!tempCheckedItem.getValue().isFolder()) { // if checked item is file
-                                        filesToDownloadList.add(tempCheckedItem.getValue());
-                                    }
-                                }
-                                label_NumOfSelectedItems.setText(filesToDownloadList.size() + " Files Selected");
-                                if (!filesToDownloadList.isEmpty() && (downloadPath != null && !downloadPath.isEmpty())) {
-                                    btn_DownloadFiles.setDisable(false);
-                                }
-                            });
-
-                            // listen for list item selection
-                            cTreeView_fileTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-                                Platform.runLater(() -> {
-                                    textField_SelectedDisplayedName.setText(newValue.getValue().getDisplayedName());
-                                    textField_SelectedURL.setText(newValue.getValue().getUrl());
-                                    selectedURL.set(newValue.getValue().getUrl());
-                                    loadSingleFileInfoService.restart();
-                                });
-                            });
+                            setFileTreeListeners(cTreeView_fileTree);
 
                             Platform.runLater(() -> {
                                 vbox_CourseContentTreeHolder.getChildren().clear();
@@ -356,24 +349,52 @@ public class MainController {
         loadCourseContentService.start();
     }
 
-    private ArrayList<FolderFileWrapper> filesToDownloadList_copy;
-    private int filesToDownloadListSize_copy;
+    private void setFileTreeListeners(CheckTreeView<FolderFileWrapper> cTreeView_fileTree) {
+        // listen for checkboxes being checked
+        cTreeView_fileTree.getCheckModel().getCheckedItems().addListener((ListChangeListener<TreeItem<FolderFileWrapper>>) c -> {
+            ObservableList<TreeItem<FolderFileWrapper>> checkedItemList = cTreeView_fileTree.getCheckModel().getCheckedItems();
+            filesToDownloadList.clear();
+            for (TreeItem<FolderFileWrapper> tempCheckedItem : checkedItemList) {
+                if (!tempCheckedItem.getValue().isFolder()) { // if checked item is file
+                    filesToDownloadList.add(tempCheckedItem.getValue());
+                }
+            }
+            label_NumOfSelectedItems.setText(filesToDownloadList.size() + " Files Selected");
+            if (!filesToDownloadList.isEmpty() && (downloadPath != null && !downloadPath.isEmpty())) {
+                btn_DownloadFiles.setDisable(false);
+            }
+        });
+
+        // listen for list item selection
+        cTreeView_fileTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            selectedFolderOrFile = newValue.getValue();
+            Platform.runLater(() -> {
+                textField_SelectedDisplayedName.setText(selectedFolderOrFile.getDisplayedName());
+                textField_SelectedURL.setText(selectedFolderOrFile.getUrl());
+                loadSingleFileInfoService.restart();
+            });
+        });
+    }
+
     private volatile boolean bLoadTotalFileSizeService_cancelled = false;
 
     private void loadTotalDownloadSize() {
-        AtomicInteger downloadSizeInBytes = new AtomicInteger();
         ExecutorService executor = Executors.newFixedThreadPool(5);  // get 5 file sizes at a time to avoid congestion
 
         List<Callable<Void>> tasks = new ArrayList<>();
-        for (int i = 0; i < filesToDownloadListSize_copy; i++) {
+        for (int i = 0; i < flattenedAllFileList.size(); i++) {
             final int index = i;
             Callable<Void> task = () -> {
                 if (Thread.currentThread().isInterrupted() || bLoadTotalFileSizeService_cancelled) {
                     return null;
                 }
-                if (!filesToDownloadList_copy.get(index).isFolder()) {
-                    downloadSizeInBytes.addAndGet(downloader.getDownloadLength(filesToDownloadList_copy.get(index).getUrl()));
-                }
+//                if (!filesToDownloadList_copy.get(index).isFolder()) {
+//                    downloadSizeInBytes.addAndGet(downloader.getDownloadLength(filesToDownloadList_copy.get(index).getUrl()));
+//                }
+                int individualFileSize = downloader.getDownloadLength(flattenedAllFileList.get(index).getUrl());
+                flattenedAllFileList.get(index).setFileSizeInBytes(individualFileSize);
+                flattenedAllFileList.get(index).setDisplayedName(flattenedAllFileList.get(index).getDisplayedName() +
+                        " (" + SizeUtil.toHumanReadableFromBytes(individualFileSize) + ")");
                 return null;
             };
             tasks.add(task);
@@ -384,7 +405,18 @@ public class MainController {
             executor.shutdownNow();
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
-            textField_TotalFileSize.setText(SizeUtil.toHumanReadableFromBytes(downloadSizeInBytes.get()));
+            // create new file tree with new file names
+            CheckTreeView<FolderFileWrapper> cTreeView_fileTree = new CheckTreeView<>(ti_courseContentRoot);
+
+            setFileTreeListeners(cTreeView_fileTree);
+
+            Platform.runLater(() -> {
+                vbox_CourseContentTreeHolder.getChildren().clear();
+                VBox.setVgrow(cTreeView_fileTree, Priority.ALWAYS);
+                vbox_CourseContentTreeHolder.getChildren().add(cTreeView_fileTree);
+                vbox_CourseContentTreeHolder.getChildren().get(0).setDisable(false);
+            });
+
         } catch (InterruptedException e) {
             // shutdown previous executor when previous executor tasks are interrupted,
             // to allow new loadTotalFileSizeService to start
@@ -435,16 +467,20 @@ public class MainController {
         }
     }
 
+    private final ArrayList<FolderFileWrapper> flattenedAllFileList = new ArrayList<>();
+
     private void createFolderTree(CheckBoxTreeItem<FolderFileWrapper> checkBoxTreeItem,
                                   FolderFileWrapper folderOrFile) {
         if (!folderOrFile.isFolder()) { // if folderOrFile is file
             checkBoxTreeItem.getChildren().add(new CheckBoxTreeItem<>(folderOrFile)); // add file
+            flattenedAllFileList.add(folderOrFile);
         } else { // if folderOrFile is folder
             CheckBoxTreeItem<FolderFileWrapper> currentCheckBoxTreeItem = new CheckBoxTreeItem<>(folderOrFile);
             currentCheckBoxTreeItem.setExpanded(true);
             checkBoxTreeItem.getChildren().add(currentCheckBoxTreeItem); // add current folder
             for (FileNode tempFileNode : folderOrFile.getFileList()) {
                 currentCheckBoxTreeItem.getChildren().add(new CheckBoxTreeItem<>(tempFileNode)); // add files, if any
+                flattenedAllFileList.add(tempFileNode);
             }
             for (FolderNode tempFolderNode : folderOrFile.getFolderNodeList()) {
                 createFolderTree(currentCheckBoxTreeItem, tempFolderNode); // traverse deeper into sub-folders, if any
@@ -487,6 +523,27 @@ public class MainController {
         fileDownloadProgressStage.setScene(new Scene(root));
         fileDownloadProgressStage.setTitle("File Download Progress");
         fileDownloadProgressStage.setResizable(false);
+        fileDownloadProgressStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+                if (bDownloadInProgress) {
+                    // consume event
+                    event.consume();
+
+                    // show close dialog
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    alert.setTitle("Abort Download Confirmation");
+                    alert.setHeaderText("Closing the progress window will abort the ongoing download. Continue?");
+                    alert.initOwner(fileDownloadProgressStage);
+
+                    Optional<ButtonType> result = alert.showAndWait();
+                    if (result.get() == ButtonType.OK) {
+                        downloadProgressController.on_btn_abort_clicked(null);
+                        downloadProgressController.on_btn_close_clicked(null);
+                    }
+                }
+            }
+        });
 
         if (downloadProgressController != null) {
             downloadProgressController.setTotalNumOfFiles(filesToDownloadList.size());
@@ -506,6 +563,8 @@ public class MainController {
         handleDownloadFile();
     }
 
+    private boolean bDownloadInProgress = false;
+
     private void handleDownloadFile() {
         downloadFileService = new Service<Void>() {
             @Override
@@ -516,10 +575,12 @@ public class MainController {
                         if (downloadProgressController == null) {
                             return null;
                         }
+                        bDownloadInProgress = true;
                         for (int i = 0; i < filesToDownloadList.size(); i++) {
                             if (isCancelled()) {
                                 downloadProgressController.disableBtn_abort(true);
                                 downloadProgressController.disableBtn_close(false);
+                                bDownloadInProgress = false;
                                 downloadProgressController.setLabel_status("Download cancelled");
                                 return null;
                             }
@@ -572,6 +633,7 @@ public class MainController {
                         } else {
                             downloadProgressController.setLabel_status("Download cancelled");
                         }
+                        bDownloadInProgress = false;
                         downloadProgressController.disableBtn_close(false);
                         downloadProgressController.disableBtn_abort(true);
                         return null;
@@ -589,13 +651,21 @@ public class MainController {
             return new Task<>() {
                 @Override
                 protected Void call() {
-                    filesToDownloadList_copy = new ArrayList<>(filesToDownloadList);
-                    filesToDownloadListSize_copy = filesToDownloadList_copy.size();
-                    if (!filesToDownloadList_copy.isEmpty()) {
-                        textField_TotalFileSize.setText("Loading... (for " + filesToDownloadListSize_copy + " files)");
+                    if (!flattenedAllFileList.isEmpty()) {
+                        Platform.runLater(() -> {
+                            label_RetrievingText.setText("Loading... (for " + flattenedAllFileList.size() + " files)");
+                            hBox_RetrieveStatus.setVisible(true);
+                        });
                         loadTotalDownloadSize();
+                        Platform.runLater(() -> {
+                            hBox_RetrieveStatus.setVisible(false);
+                            btn_RefreshTotalFileSize.setDisable(false);
+                        });
                     } else {
-                        textField_TotalFileSize.setText("0.00 B");
+                        Platform.runLater(() -> {
+                            commonUtils.customWarning("There is no file in this course");
+                            vbox_CourseContentTreeHolder.getChildren().get(0).setDisable(false);
+                        });
                     }
                     return null;
                 }
@@ -617,6 +687,12 @@ public class MainController {
 
     private void reset_courseContent_pageValues() throws InterruptedException {
         cancelLoadTotalFileSizeService();
+        flattenedAllFileList.clear();
+        Platform.runLater(() -> {
+            btn_RefreshTotalFileSize.setDisable(true);
+            btn_GetAllFileSize.setDisable(false);
+        });
+        label_RetrievingText.setText("Retrieving file information...");
         textField_SelectedDisplayedName.setText("None Selected");
         textField_SelectedServerName.setText("None Selected");
         textField_SelectedURL.setText("None Selected");
@@ -667,8 +743,20 @@ public class MainController {
     }
 
     @FXML
-    void on_btn_RefreshTotalFileSize_clicked(ActionEvent event) throws InterruptedException {
+    void on_btn_RefreshTotalFileSize_clicked(ActionEvent event) {
+        int totalSizeInBytes = 0;
+        for (FolderFileWrapper tempFile : filesToDownloadList) {
+            totalSizeInBytes += tempFile.getFileSizeInBytes();
+        }
+        textField_TotalFileSize.setText(SizeUtil.toHumanReadableFromBytes(totalSizeInBytes));
+    }
+
+    @FXML
+    void on_btn_GetAllFileSize_clicked(ActionEvent event) throws InterruptedException {
+        btn_GetAllFileSize.setDisable(true);
         cancelLoadTotalFileSizeService();
+        vbox_CourseContentTreeHolder.getChildren().get(0).setDisable(true);  // disable file tree UI until finished loading
         loadTotalFileSizeService.restart();
     }
+
 }

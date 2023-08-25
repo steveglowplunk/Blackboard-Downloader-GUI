@@ -15,9 +15,9 @@ public class MainApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("main-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
         stage.setTitle("Blackboard Downloader GUI");
-        stage.setWidth(800);
+        stage.setWidth(900);
         stage.setHeight(550 + 30);
-        stage.setMinWidth(800);
+        stage.setMinWidth(900);
         stage.setMinHeight(550 + 30);
         stage.setScene(scene);
 

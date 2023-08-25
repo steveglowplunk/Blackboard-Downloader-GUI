@@ -11,6 +11,8 @@ public abstract class FolderFileWrapper {
 
     public abstract String getServerFileName();
 
+    public abstract void setDisplayedName(String name);
+
     public abstract boolean isFolder();
 
     public abstract ArrayList<FileNode> getFileList();
@@ -18,4 +20,8 @@ public abstract class FolderFileWrapper {
     public abstract ArrayList<FolderNode> getFolderNodeList();
 
     public abstract String getFolderPath();
+
+    public abstract int getFileSizeInBytes();
+
+    public abstract void setFileSizeInBytes(int sizeInBytes);
 }

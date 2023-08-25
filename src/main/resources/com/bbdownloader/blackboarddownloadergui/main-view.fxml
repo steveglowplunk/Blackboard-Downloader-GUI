@@ -16,7 +16,7 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane fx:id="anchorPane_MainWindow" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="550.0" minWidth="800.0" prefHeight="550.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bbdownloader.blackboarddownloadergui.MainController">
+<AnchorPane fx:id="anchorPane_MainWindow" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="550.0" minWidth="900.0" prefHeight="550.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bbdownloader.blackboarddownloadergui.MainController">
    <children>
       <MenuBar layoutY="1.0" prefHeight="26.0" prefWidth="800.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <menus>
@@ -42,46 +42,46 @@
       <AnchorPane fx:id="anchorPane_MainContentContainer" layoutY="26.0" prefHeight="297.0" prefWidth="495.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="26.0">
          <children>
             <Label layoutX="20.0" layoutY="14.0" text="Available Courses" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="14.0" />
-            <VBox fx:id="vbox_CourseTreeHolder" layoutY="49.0" prefHeight="405.0" prefWidth="450.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="330.0" AnchorPane.topAnchor="40.0">
+            <VBox fx:id="vbox_CourseTreeHolder" layoutY="49.0" prefHeight="405.0" prefWidth="450.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="364.0" AnchorPane.topAnchor="40.0">
                <children>
                   <TextArea disable="true" editable="false" focusTraversable="false" pickOnBounds="false" text="Course list not yet loaded" VBox.vgrow="ALWAYS" />
                </children>
             </VBox>
-            <VBox fx:id="vbox_ButtonList" prefHeight="217.0" prefWidth="265.0" spacing="20.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="500.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="40.0">
+            <VBox fx:id="vbox_ButtonList" prefHeight="217.0" prefWidth="265.0" spacing="20.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="551.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="40.0">
                <children>
-                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" prefHeight="60.0" text="Load Cookies File For Login..." />
-                  <Button fx:id="btn_LoadCourse" disable="true" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_LoadCourse_clicked" prefHeight="60.0" text="Load Course Content &gt;" />
+                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" prefHeight="60.0" text="🔐 Load Cookies File For Login..." />
+                  <Button fx:id="btn_LoadCourse" disable="true" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_LoadCourse_clicked" prefHeight="60.0" text="Load Course Content ▶" />
                </children>
             </VBox>
          </children>
       </AnchorPane>
       <AnchorPane fx:id="anchorPane_CourseContentContainer" layoutX="10.0" layoutY="33.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="464.0" prefWidth="800.0" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="26.0">
          <children>
-            <HBox fx:id="hbox_CourseContentHeader" alignment="CENTER" layoutX="20.0" layoutY="8.0" prefHeight="24.0" prefWidth="450.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="330.0" AnchorPane.topAnchor="8.0">
+            <HBox fx:id="hbox_CourseContentHeader" alignment="CENTER" layoutX="20.0" layoutY="8.0" prefHeight="24.0" prefWidth="450.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="364.0" AnchorPane.topAnchor="8.0">
                <children>
                   <Label fx:id="hBox_retrieveStatus" text="Course Content" />
                   <Pane HBox.hgrow="ALWAYS" />
                   <HBox fx:id="hBox_RetrieveStatus" alignment="CENTER" fillHeight="false" spacing="10.0">
                      <children>
                         <ProgressIndicator prefHeight="24.0" prefWidth="24.0" />
-                        <Label text="Retrieving file information..." />
+                        <Label fx:id="label_RetrievingText" text="Retrieving file information..." />
                      </children>
                   </HBox>
                </children>
             </HBox>
-            <VBox fx:id="vbox_CourseContentTreeHolder" layoutX="10.0" layoutY="59.0" prefHeight="405.0" prefWidth="450.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="330.0" AnchorPane.topAnchor="40.0">
+            <VBox fx:id="vbox_CourseContentTreeHolder" layoutX="10.0" layoutY="59.0" prefHeight="405.0" prefWidth="450.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="364.0" AnchorPane.topAnchor="40.0">
                <children>
                   <TextArea disable="true" editable="false" focusTraversable="false" pickOnBounds="false" text="Course Content not yet loaded" VBox.vgrow="ALWAYS" />
                </children>
             </VBox>
-            <VBox fx:id="vbox_ButtonList_CourseContentContainer" layoutX="507.0" layoutY="40.0" prefHeight="370.0" prefWidth="265.0" spacing="10.0" AnchorPane.bottomAnchor="65.0" AnchorPane.leftAnchor="500.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="40.0">
+            <VBox fx:id="vbox_ButtonList_CourseContentContainer" layoutX="507.0" layoutY="40.0" prefHeight="370.0" prefWidth="265.0" spacing="10.0" AnchorPane.bottomAnchor="65.0" AnchorPane.leftAnchor="551.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="40.0">
                <children>
-                  <Button fx:id="btn_DownloadFiles" disable="true" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_DownloadFiles_clicked" prefHeight="60.0" text="Download Selected Files" />
-                  <Button fx:id="btn_SelectDownloadPath" alignment="CENTER" contentDisplay="CENTER" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_SelectDownloadPath_clicked" text="Select Download Destination..." />
+                  <Button fx:id="btn_DownloadFiles" disable="true" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_DownloadFiles_clicked" prefHeight="60.0" text="📥 Download Selected Files" />
+                  <Button fx:id="btn_SelectDownloadPath" alignment="CENTER" contentDisplay="CENTER" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_SelectDownloadPath_clicked" text="📂 Select Download Destination..." />
                   <Label text="Selected Download Path:" />
                   <TextField fx:id="textField_SelectedDownloadPath" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="None Selected" />
                   <Separator />
-                  <Label text="Selected Item Details:" />
+                  <Label text="🛈 Selected Item Details:" />
                   <HBox alignment="CENTER_LEFT" spacing="5.0">
                      <children>
                         <Label text="Displayed Name:" />
@@ -114,10 +114,16 @@
                         <TextField fx:id="textField_TotalFileSize" editable="false" style="-fx-padding: 0px; -fx-background-color: transparent;" text="No data yet" HBox.hgrow="ALWAYS" />
                      </children>
                   </HBox>
-                  <Button fx:id="btn_RefreshTotalFileSize" mnemonicParsing="false" onAction="#on_btn_RefreshTotalFileSize_clicked" text="🔄 Refresh Total File Size" />
+                  <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="368.0" spacing="5.0">
+                     <children>
+                        <Button fx:id="btn_GetAllFileSize" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" onAction="#on_btn_GetAllFileSize_clicked" text="📄 Get All File Sizes" />
+                        <Pane HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btn_RefreshTotalFileSize" disable="true" mnemonicParsing="false" onAction="#on_btn_RefreshTotalFileSize_clicked" text="🔄 Refresh Selected File Size" />
+                     </children>
+                  </HBox>
                </children>
             </VBox>
-            <Button fx:id="btn_OpenCourseList" alignment="CENTER" contentDisplay="CENTER" layoutX="618.0" layoutY="424.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_OpenCourseList_clicked" text="&lt; Go Back to Course List" AnchorPane.bottomAnchor="24.4" AnchorPane.rightAnchor="35.599999999999994" />
+            <Button fx:id="btn_OpenCourseList" alignment="CENTER" contentDisplay="CENTER" layoutX="618.0" layoutY="424.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_OpenCourseList_clicked" text="◀ Go Back to Course List" AnchorPane.bottomAnchor="24.4" AnchorPane.rightAnchor="35.599999999999994" />
          </children>
       </AnchorPane>
       <Pane fx:id="pane_veil" prefHeight="500.0" prefWidth="800.0" style="-fx-background-color: rgba(0, 0, 0, 0.3);" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />

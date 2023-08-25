@@ -43,7 +43,7 @@ Tested on Windows 10 with JDK 17.0.8
 1. Simply double click on Blackboard-Downloader-GUI.jar to open the application  
 
 1. 	Click "Load Cookies File" and choose the cookies txt file exported by your browser earlier. You should see a simlar screen:  
-![javaw_2023_08_08_114327](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/assets/28670916/3b499cd6-79f5-40cd-b79c-d7f4fbc1831c)
+![javaw_2023_08_25_171608](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/assets/28670916/dc3b7400-406f-4101-88e9-88515adf790c)
 Note: Only available courses (not "locked" on Blackboard's website) can be loaded  
 
 1. Select a course from the list and click "Load Course Content" to load the file list of the selected course  
@@ -51,10 +51,9 @@ Note: Only available courses (not "locked" on Blackboard's website) can be loade
 1. Click on checkboxes to select files you wish to download  
 
 1. Click "Select Download Destination" to choose where the files will be downloaded to  
-![javaw_2023_08_08_115612](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/assets/28670916/1b4f5d9d-38c7-48d3-b7dc-59c30672ee68)
-
+![javaw_2023_08_25_171814](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/assets/28670916/50aa29cd-f64b-4186-9567-786882954544)
 1. Click "Download Selected Files" to start downloading  
-![javaw_2023_08_08_115804](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/assets/28670916/65ac1680-6b76-4d67-8518-5400c86aed55)
+![javaw_2023_08_25_171913](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/assets/28670916/2b04f1ff-efe9-4c45-8b86-ce925c0b7e5d)
 
 ## Build environment  
 The project is built using IntelliJ IDEA, with Amazon Corretto 17 JDK and JavaFX Scene Builder 20.0.0  

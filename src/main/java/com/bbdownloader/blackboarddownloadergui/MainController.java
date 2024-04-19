@@ -14,6 +14,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.Dragboard;
 import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -33,13 +35,15 @@ import org.jsoup.select.Elements;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MainController {
     @FXML
@@ -105,15 +109,10 @@ public class MainController {
         AnchorPane.setRightAnchor(vbox_CourseContentTreeHolder, commonUtils.calcPercentage(width, 0.6, 10, "vbox_CourseContentTreeHolder"));
         AnchorPane.setRightAnchor(hbox_CourseContentHeader, commonUtils.calcPercentage(width, 0.6, 10, "hbox_CourseContentHeader"));
         AnchorPane.setLeftAnchor(vbox_ButtonList_CourseContentContainer, commonUtils.calcPercentage(width, 0.4, 20, "vbox_ButtonList_CourseContentContainer"));
+        AnchorPane.setLeftAnchor(hbox_bottom_CourseContentContainer, commonUtils.calcPercentage(width, 0.4, 20, "hbox_bottom_CourseContentContainer"));
     }
 
-    @FXML
-    void on_menuItem_OpenCookie_clicked(ActionEvent event) throws IOException {
-        // load cookies into downloader object and retrieve course list
-        FileChooser fc = new FileChooser();
-        fc.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("txt files", "*.txt"));
-        File cookieFile = fc.showOpenDialog(null);
-
+    void handleCookieFileLoading(File cookieFile) throws IOException {
         if (cookieFile != null) {
             downloader = new Downloader(true);
             downloader.setDomainFilter("blackboard.cuhk.edu.hk");  // ensures cookies file comes from blackboard
@@ -169,6 +168,47 @@ public class MainController {
             } else {
                 commonUtils.customWarning("Invalid cookies file");
             }
+        }
+    }
+
+    @FXML
+    void on_menuItem_OpenCookie_clicked(ActionEvent event) {
+        // load cookies into downloader object and retrieve course list
+        FileChooser fc = new FileChooser();
+        fc.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("txt files", "*.txt"));
+        File cookieFile = fc.showOpenDialog(null);
+        try {
+            handleCookieFileLoading(cookieFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    void on_btn_LoadCookiesFile_dragover(DragEvent event) {
+        Dragboard db = event.getDragboard();
+        if (db.hasFiles()) {
+            event.acceptTransferModes(javafx.scene.input.TransferMode.COPY);
+        } else {
+            event.consume();
+        }
+    }
+
+    @FXML
+    void on_btn_LoadCookiesFile_dropped(DragEvent event) {
+        Dragboard db = event.getDragboard();
+        boolean success = false;
+        if (db.hasFiles()) {
+            System.out.println(db.getFiles().get(0));
+            success = true;
+        }
+        event.setDropCompleted(success);
+        event.consume();
+        File cookieFile = db.getFiles().get(0);
+        try {
+            handleCookieFileLoading(cookieFile);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -249,6 +289,9 @@ public class MainController {
     private HBox hbox_CourseContentHeader;
 
     @FXML
+    private HBox hbox_bottom_CourseContentContainer;
+
+    @FXML
     private Label label_NumOfSelectedItems;
 
     @FXML
@@ -256,6 +299,9 @@ public class MainController {
 
     @FXML
     private Pane pane_veil;
+
+    @FXML
+    private CheckBox checkbox_IncludeAssignments;
 
     private String downloadPath;
     private final ArrayList<String> visitedFolderLinks = new ArrayList<>();
@@ -379,7 +425,7 @@ public class MainController {
     private volatile boolean bLoadTotalFileSizeService_cancelled = false;
 
     private void loadTotalDownloadSize() {
-        ExecutorService executor = Executors.newFixedThreadPool(5);  // get 5 file sizes at a time to avoid congestion
+        ExecutorService executor = Executors.newFixedThreadPool(10);  // get 10 file sizes at a time to avoid congestion
 
         List<Callable<Void>> tasks = new ArrayList<>();
         for (int i = 0; i < flattenedAllFileList.size(); i++) {
@@ -427,8 +473,7 @@ public class MainController {
 
     private void traverseFolder(FolderNode folderNode, String lastLevelFolderName) {
         visitedFolderLinks.add(folderNode.getFolderURL());
-        String currentLevelFolderName = lastLevelFolderName + folderNode.getFolderName() + "\\";
-        // TODO: PLATFORM DEPENDENT
+        String currentLevelFolderName = lastLevelFolderName + folderNode.getFolderName() + File.separator;
 
         Document doc = null;
 
@@ -459,11 +504,69 @@ public class MainController {
                     folderNode.getFolderNodeList().add(new FolderNode(absHref, linkElement.text()));
                     visitedFolderLinks.add(absHref);
                 }
+            } else if (absHref.contains("uploadAssignment")) { // indicates assignments
+                if (checkbox_IncludeAssignments.isSelected()) {
+                    String displayedName = linkElement.text();
+                    folderNode.getAssignmentList().add(new AssignmentNode(
+                            absHref, displayedName, currentLevelFolderName
+                    ));
+                }
+            }
+        }
+
+        if (checkbox_IncludeAssignments.isSelected()) {
+            for (int i = 0; i < folderNode.getAssignmentList().size(); i++) {
+                AssignmentNode childAssignmentNode = folderNode.getAssignmentList().get(i);
+                traverseAssignment(childAssignmentNode);
             }
         }
 
         for (int i = 0; i < folderNode.getFolderNodeList().size(); i++) {
-            traverseFolder(folderNode.getFolderNodeList().get(i), currentLevelFolderName);
+            FolderNode childFolderNode = folderNode.getFolderNodeList().get(i);
+            traverseFolder(childFolderNode, currentLevelFolderName);
+        }
+    }
+
+    private void traverseAssignment(AssignmentNode assignmentNode) {
+        Document doc = null;
+
+        try {
+            doc = Jsoup.connect(assignmentNode.getUrl()).cookies(downloader.getCookiesMap()).get();
+        } catch (RuntimeException | IOException e) {
+            e.printStackTrace();
+        }
+
+        Elements linkElements = null;
+        if (doc != null) {
+            linkElements = doc.select("a");
+        }
+
+        for (Element linkElement : linkElements) {
+            String absHref = linkElement.attr("abs:href");
+            if (absHref.contains("assignment/download")) {
+                try {
+                    URL url = new URL(absHref);
+                    String query = url.getQuery();
+                    String serverFileName = null;
+                    String[] params = query.split("&");
+                    for (String param : params) {
+                        if (param.startsWith("fileName=")) {
+                            serverFileName = URLDecoder.decode(param.substring("fileName=".length()), "UTF-8");
+                            break;
+                        }
+                    }
+                    if (serverFileName != null) {
+                        assignmentNode.getFileList().add(new FileNode(
+                                absHref, serverFileName, serverFileName,
+                                assignmentNode.getFolderPath() + assignmentNode.getDisplayedName() + File.separator
+                        ));
+                    }
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 
@@ -481,6 +584,15 @@ public class MainController {
             for (FileNode tempFileNode : folderOrFile.getFileList()) {
                 currentCheckBoxTreeItem.getChildren().add(new CheckBoxTreeItem<>(tempFileNode)); // add files, if any
                 flattenedAllFileList.add(tempFileNode);
+            }
+            for (AssignmentNode tempAssignmentNode : folderOrFile.getAssignmentList()) {
+                CheckBoxTreeItem<FolderFileWrapper> tempAssignmentCheckBoxTreeItem = new CheckBoxTreeItem<>(tempAssignmentNode);
+                tempAssignmentCheckBoxTreeItem.setExpanded(true);
+                currentCheckBoxTreeItem.getChildren().add(tempAssignmentCheckBoxTreeItem); // add assignments, if any
+                for (FileNode tempFileNode : tempAssignmentNode.getFileList()) {
+                    tempAssignmentCheckBoxTreeItem.getChildren().add(new CheckBoxTreeItem<>(tempFileNode)); // add files, if any
+                    flattenedAllFileList.add(tempFileNode);
+                }
             }
             for (FolderNode tempFolderNode : folderOrFile.getFolderNodeList()) {
                 createFolderTree(currentCheckBoxTreeItem, tempFolderNode); // traverse deeper into sub-folders, if any
@@ -576,6 +688,8 @@ public class MainController {
                             return null;
                         }
                         bDownloadInProgress = true;
+                        boolean bCheckDuplicatedFiles = true;
+                        boolean bSkipAllDuplicatedFiles = false;
                         for (int i = 0; i < filesToDownloadList.size(); i++) {
                             if (isCancelled()) {
                                 downloadProgressController.disableBtn_abort(true);
@@ -590,6 +704,58 @@ public class MainController {
 
                             downloadProgressController.setCurrentFileIndex(i + 1);
                             downloadProgressController.setDownloadProgress(0);
+
+                            String pathToDownload = downloadPath + filesToDownloadList.get(i).getFolderPath();
+                            String pathToDownloadCheck = pathToDownload + serverFileName;
+                            if (bCheckDuplicatedFiles) {
+                                File checkFile = new File(pathToDownloadCheck);
+                                if (checkFile.isFile() && !bSkipAllDuplicatedFiles) { // check if file exists
+                                    AtomicReference<Optional<ButtonType>> result = new AtomicReference<>(Optional.empty());
+                                    CompletableFuture<Void> future = new CompletableFuture<>();
+                                    Platform.runLater(() -> {
+                                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                                        alert.setTitle("Duplicated File");
+                                        alert.setHeaderText("File already exists in the directory.");
+                                        alert.setContentText("File: " + serverFileName + "\nPath: " + pathToDownloadCheck);
+                                        alert.getButtonTypes().clear();
+                                        alert.getButtonTypes().addAll(new ButtonType("Overwrite once"), new ButtonType("Overwrite all"),
+                                            new ButtonType("Skip once"), new ButtonType("Skip all"), new ButtonType("Cancel Download"));
+
+                                        // Make the alert resizable
+                                        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+                                        alert.getDialogPane().setMinWidth(Region.USE_PREF_SIZE);
+                                        Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+                                        stage.setResizable(true);
+
+                                        result.set(alert.showAndWait());
+                                        future.complete(null); // block until user makes a choice
+                                    });
+
+                                    future.join();
+
+                                    if (result.get().isEmpty() || result.get().get().getText().equals("Cancel Download")) {
+                                        Platform.runLater(() -> {
+                                            downloadProgressController.disableBtn_abort(true);
+                                            downloadProgressController.disableBtn_close(false);
+                                            bDownloadInProgress = false;
+                                            downloadProgressController.setLabel_status("Download cancelled");
+                                            downloadProgressController.on_btn_abort_clicked(null);
+                                        });
+                                        break;
+                                    } else if (result.get().get().getText().equals("Skip once")) {
+                                        continue;
+                                    } else if (result.get().get().getText().equals("Skip all")) {
+                                        bSkipAllDuplicatedFiles = true;
+                                        continue;
+                                    } else if (result.get().get().getText().equals("Overwrite once")) {
+                                        // do nothing
+                                    } else if (result.get().get().getText().equals("Overwrite all")) {
+                                        bCheckDuplicatedFiles = false;
+                                    }
+                                } else if (checkFile.isFile() && bSkipAllDuplicatedFiles) {
+                                    continue;
+                                }
+                            }
 
                             downloader.setDownloadHandler(new CombinedSpeedProgressDownloadHandler(downloader) {
                                 @Override
@@ -624,9 +790,12 @@ public class MainController {
                                 }
                             });
 
-                            downloader.downloadFileToLocation(
-                                    absHref,
-                                    downloadPath + filesToDownloadList.get(i).getFolderPath());
+                            if (!isCancelled()) {
+                                downloader.downloadFileToLocation(
+                                        absHref,
+                                        pathToDownload,
+                                        serverFileName);
+                            }
                         }
                         if (!isCancelled()) {
                             downloadProgressController.setLabel_status("Download finished");
@@ -706,6 +875,18 @@ public class MainController {
 
     @FXML
     void on_btn_OpenCourseList_clicked(ActionEvent event) {
+        // Shutdown all active threads in executorService
+//        executorService.shutdownNow();
+//        try {
+//            // Wait for all threads to terminate
+//            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+//                // Optional: Log or handle failure to stop threads.
+//            }
+//        } catch (InterruptedException e) {
+//            // Optional: Log interruption.
+//            executorService.shutdownNow();
+//            Thread.currentThread().interrupt();
+//        }
         loadPage(Pages.COURSE_LIST);
     }
 
@@ -716,7 +897,7 @@ public class MainController {
         File downloadPath_file;
         downloadPath_file = dc.showDialog(null);
         if (downloadPath_file != null) {
-            downloadPath = downloadPath_file.getAbsolutePath() + "\\"; // TODO: PLATFORM DEPENDENT
+            downloadPath = downloadPath_file.getAbsolutePath() + File.separator;
             textField_SelectedDownloadPath.setText(downloadPath);
             btn_DownloadFiles.setDisable(false);
         } else {
@@ -759,4 +940,8 @@ public class MainController {
         loadTotalFileSizeService.restart();
     }
 
+    @FXML
+    void on_checkbox_IncludeAssignments_clicked(ActionEvent event) throws IOException, InterruptedException {
+        on_CourseContentContainer_opened();
+    }
 }

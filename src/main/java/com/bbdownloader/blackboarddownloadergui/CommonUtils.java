@@ -1,6 +1,7 @@
 package com.bbdownloader.blackboarddownloadergui;
 
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -8,6 +9,7 @@ import org.jsoup.Jsoup;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.Optional;
 
 public class CommonUtils {
     public void customWarning(String headerContent) {

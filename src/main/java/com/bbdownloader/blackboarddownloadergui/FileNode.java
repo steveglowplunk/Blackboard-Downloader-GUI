@@ -71,4 +71,9 @@ public class FileNode extends FolderFileWrapper {
     public void setFileSizeInBytes(int sizeInBytes) {
         this.fileSizeInBytes = sizeInBytes;
     }
+
+    @Override
+    public ArrayList<AssignmentNode> getAssignmentList() {
+        return null;
+    }
 }

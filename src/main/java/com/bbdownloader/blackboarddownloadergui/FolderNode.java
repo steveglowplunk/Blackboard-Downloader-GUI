@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class FolderNode extends FolderFileWrapper {
     private ArrayList<FileNode> fileList = new ArrayList<>();
     private ArrayList<FolderNode> folderNodeList = new ArrayList<>();
+    private ArrayList<AssignmentNode> assignmentList = new ArrayList<>();
     private String folderURL;
     private String folderName;
 
@@ -16,6 +17,11 @@ public class FolderNode extends FolderFileWrapper {
     @Override
     public ArrayList<FileNode> getFileList() {
         return fileList;
+    }
+
+    @Override
+    public ArrayList<AssignmentNode> getAssignmentList() {
+        return assignmentList;
     }
 
     @Override

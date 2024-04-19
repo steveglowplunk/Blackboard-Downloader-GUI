@@ -17,6 +17,8 @@ public abstract class FolderFileWrapper {
 
     public abstract ArrayList<FileNode> getFileList();
 
+    public abstract ArrayList<AssignmentNode> getAssignmentList();
+
     public abstract ArrayList<FolderNode> getFolderNodeList();
 
     public abstract String getFolderPath();

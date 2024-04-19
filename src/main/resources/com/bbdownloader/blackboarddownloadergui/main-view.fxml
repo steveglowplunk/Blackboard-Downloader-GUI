@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
@@ -49,7 +50,7 @@
             </VBox>
             <VBox fx:id="vbox_ButtonList" prefHeight="217.0" prefWidth="265.0" spacing="20.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="551.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="40.0">
                <children>
-                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" prefHeight="60.0" text="🔐 Load Cookies File For Login..." />
+                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" onDragDropped="#on_btn_LoadCookiesFile_dropped" onDragOver="#on_btn_LoadCookiesFile_dragover" prefHeight="60.0" text="🔐 Click to Load Cookies File For Login...&#10;Or &#10;Drag and Drop Here" textAlignment="CENTER" wrapText="true" />
                   <Button fx:id="btn_LoadCourse" disable="true" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_LoadCourse_clicked" prefHeight="60.0" text="Load Course Content ▶" />
                </children>
             </VBox>
@@ -123,7 +124,13 @@
                   </HBox>
                </children>
             </VBox>
-            <Button fx:id="btn_OpenCourseList" alignment="CENTER" contentDisplay="CENTER" layoutX="618.0" layoutY="424.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_OpenCourseList_clicked" text="◀ Go Back to Course List" AnchorPane.bottomAnchor="24.4" AnchorPane.rightAnchor="35.599999999999994" />
+            <HBox fx:id="hbox_bottom_CourseContentContainer" alignment="CENTER_LEFT" prefHeight="26.0" spacing="5.0" AnchorPane.bottomAnchor="24.0" AnchorPane.leftAnchor="551.0" AnchorPane.rightAnchor="36.0">
+               <children>
+                  <CheckBox fx:id="checkbox_IncludeAssignments" mnemonicParsing="false" onAction="#on_checkbox_IncludeAssignments_clicked" text="Include Assignments" />
+                  <Pane HBox.hgrow="ALWAYS" />
+                  <Button fx:id="btn_OpenCourseList" alignment="CENTER" contentDisplay="CENTER" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_OpenCourseList_clicked" text="◀ Go Back to Course List" />
+               </children>
+            </HBox>
          </children>
       </AnchorPane>
       <Pane fx:id="pane_veil" prefHeight="500.0" prefWidth="800.0" style="-fx-background-color: rgba(0, 0, 0, 0.3);" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />

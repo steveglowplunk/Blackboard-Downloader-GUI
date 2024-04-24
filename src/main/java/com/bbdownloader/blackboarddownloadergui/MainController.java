@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MainController {
@@ -434,9 +433,6 @@ public class MainController {
                 if (Thread.currentThread().isInterrupted() || bLoadTotalFileSizeService_cancelled) {
                     return null;
                 }
-//                if (!filesToDownloadList_copy.get(index).isFolder()) {
-//                    downloadSizeInBytes.addAndGet(downloader.getDownloadLength(filesToDownloadList_copy.get(index).getUrl()));
-//                }
                 int individualFileSize = downloader.getDownloadLength(flattenedAllFileList.get(index).getUrl());
                 flattenedAllFileList.get(index).setFileSizeInBytes(individualFileSize);
                 flattenedAllFileList.get(index).setDisplayedName(flattenedAllFileList.get(index).getDisplayedName() +
@@ -501,12 +497,15 @@ public class MainController {
                     }
                 }
                 if (!bVisited) {
-                    folderNode.getFolderNodeList().add(new FolderNode(absHref, linkElement.text()));
+                    String folderName = linkElement.text();
+                    folderName = folderName.replaceAll("[<>:\"/\\\\|?*.]|[\u0000-\u001F\u007F]", "-");
+                    folderNode.getFolderNodeList().add(new FolderNode(absHref, folderName));
                     visitedFolderLinks.add(absHref);
                 }
             } else if (absHref.contains("uploadAssignment")) { // indicates assignments
                 if (checkbox_IncludeAssignments.isSelected()) {
                     String displayedName = linkElement.text();
+                    displayedName = displayedName.replaceAll("[<>:\"/\\\\|?*.]|[\u0000-\u001F\u007F]", "-");
                     folderNode.getAssignmentList().add(new AssignmentNode(
                             absHref, displayedName, currentLevelFolderName
                     ));
@@ -701,25 +700,29 @@ public class MainController {
 
                             String absHref = filesToDownloadList.get(i).getUrl();
                             String serverFileName = downloader.getServerFileName(absHref);
+                            serverFileName = serverFileName.replaceAll("[<>:\"/\\\\|?*]|[\u0000-\u001F\u007F]", "-");
 
                             downloadProgressController.setCurrentFileIndex(i + 1);
                             downloadProgressController.setDownloadProgress(0);
 
-                            String pathToDownload = downloadPath + filesToDownloadList.get(i).getFolderPath();
+                            String tempFolderPath = filesToDownloadList.get(i).getFolderPath();
+                            String pathToDownload = downloadPath + tempFolderPath;
+
                             String pathToDownloadCheck = pathToDownload + serverFileName;
                             if (bCheckDuplicatedFiles) {
                                 File checkFile = new File(pathToDownloadCheck);
                                 if (checkFile.isFile() && !bSkipAllDuplicatedFiles) { // check if file exists
                                     AtomicReference<Optional<ButtonType>> result = new AtomicReference<>(Optional.empty());
                                     CompletableFuture<Void> future = new CompletableFuture<>();
+                                    String finalServerFileName = serverFileName;
                                     Platform.runLater(() -> {
                                         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
                                         alert.setTitle("Duplicated File");
                                         alert.setHeaderText("File already exists in the directory.");
-                                        alert.setContentText("File: " + serverFileName + "\nPath: " + pathToDownloadCheck);
+                                        alert.setContentText("File: " + finalServerFileName + "\nPath: " + pathToDownloadCheck);
                                         alert.getButtonTypes().clear();
                                         alert.getButtonTypes().addAll(new ButtonType("Overwrite once"), new ButtonType("Overwrite all"),
-                                            new ButtonType("Skip once"), new ButtonType("Skip all"), new ButtonType("Cancel Download"));
+                                                new ButtonType("Skip once"), new ButtonType("Skip all"), new ButtonType("Cancel Download"));
 
                                         // Make the alert resizable
                                         alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
@@ -757,11 +760,12 @@ public class MainController {
                                 }
                             }
 
+                            String finalServerFileName1 = serverFileName;
                             downloader.setDownloadHandler(new CombinedSpeedProgressDownloadHandler(downloader) {
                                 @Override
                                 public void onDownloadStart() {
                                     super.onDownloadStart();
-                                    downloadProgressController.setLabel_FileName(serverFileName);
+                                    downloadProgressController.setLabel_FileName(finalServerFileName1);
                                     downloadProgressController.updateLabel_numOfFiles();
                                     downloadProgressController.setLabel_status("Download in progress...");
                                 }
@@ -875,18 +879,6 @@ public class MainController {
 
     @FXML
     void on_btn_OpenCourseList_clicked(ActionEvent event) {
-        // Shutdown all active threads in executorService
-//        executorService.shutdownNow();
-//        try {
-//            // Wait for all threads to terminate
-//            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-//                // Optional: Log or handle failure to stop threads.
-//            }
-//        } catch (InterruptedException e) {
-//            // Optional: Log interruption.
-//            executorService.shutdownNow();
-//            Thread.currentThread().interrupt();
-//        }
         loadPage(Pages.COURSE_LIST);
     }
 

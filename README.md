@@ -8,7 +8,7 @@ Supported platform: Tested on Windows 10 with JDK 17.0.8 and JRE 1.8
 May or may not work on other OS that support Java  
 
 1. Install a Java Runtime Environment  
-   You'll need a JRE equivalent to or newer than Java 8
+   You'll need a JRE equivalent to or newer than Java 8  
    You can install the official one from Oracle  
    https://www.java.com/en/download/
 

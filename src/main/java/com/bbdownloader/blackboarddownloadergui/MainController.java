@@ -38,11 +38,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 public class MainController {
     @FXML
@@ -73,6 +72,7 @@ public class MainController {
     private Downloader downloader;
     private final CommonUtils commonUtils = new CommonUtils();
     private String selectedHomePageURL, selectedCourseName;
+    private static final Pattern INVALID_CHAR_PATTERN = Pattern.compile("[<>:\"/\\\\|?*.]|[\u0000-\u001F\u007F]");
 
 //    -------------------------------------
     // MainContentContainer
@@ -86,7 +86,7 @@ public class MainController {
             updateWidthConstraints_MainContentContainer(newValue2.doubleValue());
             updateWidthConstraints_CourseContentContainer(newValue2.doubleValue());
         };
-        ChangeListener<Scene> windowExistsListener = new ChangeListener<>() {
+        ChangeListener<Scene> windowExistsListener = new ChangeListener<Scene>() {
             @Override
             public void changed(ObservableValue observable, Scene oldScene, Scene newScene) {
                 if (newScene != null) {
@@ -219,14 +219,15 @@ public class MainController {
 
     private void loadPage(Pages option) {
         switch (option) {
-            case COURSE_LIST -> {
+            case COURSE_LIST: {
                 anchorPane_CourseContentContainer.setVisible(false);
                 anchorPane_MainContentContainer.setVisible(true);
                 if (fileDownloadProgressStage != null) {
                     fileDownloadProgressStage.close();
                 }
+                break;
             }
-            case COURSE_CONTENT -> {
+            case COURSE_CONTENT: {
                 anchorPane_MainContentContainer.setVisible(false);
                 anchorPane_CourseContentContainer.setVisible(true);
                 try {
@@ -234,9 +235,9 @@ public class MainController {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                break;
             }
         }
-
     }
 
     @FXML
@@ -303,7 +304,7 @@ public class MainController {
     private CheckBox checkbox_IncludeAssignments;
 
     private String downloadPath;
-    private final ArrayList<String> visitedFolderLinks = new ArrayList<>();
+    private final HashMap<String, Boolean> visitedFolderLinks = new HashMap<>();
     private FolderNode rootFolderNode;
     private CheckBoxTreeItem<FolderFileWrapper> ti_courseContentRoot;
     private final ArrayList<FolderFileWrapper> filesToDownloadList = new ArrayList<>();
@@ -315,7 +316,7 @@ public class MainController {
     Service<Void> loadSingleFileInfoService = new Service<Void>() {
         @Override
         protected Task<Void> createTask() {
-            return new Task<>() {
+            return new Task<Void>() {
                 @Override
                 protected Void call() {
                     textField_SelectedServerName.setText("Loading...");
@@ -348,17 +349,17 @@ public class MainController {
         }
         hBox_RetrieveStatus.setVisible(true);
 
-        Service<Void> loadCourseContentService = new Service<>() {
+        Service<Void> loadCourseContentService = new Service<Void>() {
             @Override
             protected Task<Void> createTask() {
-                return new Task<>() {
+                return new Task<Void>() {
                     @Override
                     protected Void call() {
                         visitedFolderLinks.clear();
 
                         // extract folders and files from course home page
                         rootFolderNode = new FolderNode(selectedHomePageURL, selectedCourseName);
-                        visitedFolderLinks.add(selectedHomePageURL);
+                        visitedFolderLinks.put(selectedHomePageURL, true);
                         traverseFolder(rootFolderNode, ""); // populate rootFolderNode
                         ti_courseContentRoot = new CheckBoxTreeItem<>(rootFolderNode);
                         ti_courseContentRoot.setExpanded(true);
@@ -467,8 +468,23 @@ public class MainController {
         }
     }
 
+    private boolean isLinkVisited(String url) {
+        // Direct check first (most efficient)
+        if (visitedFolderLinks.containsKey(url)) {
+            return true;
+        }
+
+        // Then check for partial matches
+        for (String visitedUrl : visitedFolderLinks.keySet()) {
+            if (url.contains(visitedUrl)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void traverseFolder(FolderNode folderNode, String lastLevelFolderName) {
-        visitedFolderLinks.add(folderNode.getFolderURL());
+        visitedFolderLinks.put(folderNode.getFolderURL(), true);
         String currentLevelFolderName = lastLevelFolderName + folderNode.getFolderName() + File.separator;
 
         Document doc = null;
@@ -489,23 +505,21 @@ public class MainController {
                 folderNode.getFileList().add(new FileNode(absHref, serverFileName, displayedName,
                         currentLevelFolderName));
             } else if (absHref.contains("listContent")) { // indicates folders
-                boolean bVisited = false;
-                for (String tempURL : visitedFolderLinks) { // prevent visiting old links to prevent duplicates
-                    if (absHref.contains(tempURL)) {
-                        bVisited = true;
-                        break;
-                    }
-                }
+                // Check if this URL has been visited before
+                boolean bVisited = isLinkVisited(absHref);
+
                 if (!bVisited) {
                     String folderName = linkElement.text();
-                    folderName = folderName.replaceAll("[<>:\"/\\\\|?*.]|[\u0000-\u001F\u007F]", "-");
-                    folderNode.getFolderNodeList().add(new FolderNode(absHref, folderName));
-                    visitedFolderLinks.add(absHref);
+                    folderName = INVALID_CHAR_PATTERN.matcher(folderName).replaceAll("-");
+                    if (!folderName.isEmpty()) {
+                        folderNode.getFolderNodeList().add(new FolderNode(absHref, folderName));
+                        visitedFolderLinks.put(absHref, true);
+                    }
                 }
             } else if (absHref.contains("uploadAssignment")) { // indicates assignments
                 if (checkbox_IncludeAssignments.isSelected()) {
                     String displayedName = linkElement.text();
-                    displayedName = displayedName.replaceAll("[<>:\"/\\\\|?*.]|[\u0000-\u001F\u007F]", "-");
+                    displayedName = INVALID_CHAR_PATTERN.matcher(displayedName).replaceAll("-");
                     folderNode.getAssignmentList().add(new AssignmentNode(
                             absHref, displayedName, currentLevelFolderName
                     ));
@@ -680,7 +694,7 @@ public class MainController {
         downloadFileService = new Service<Void>() {
             @Override
             protected Task<Void> createTask() {
-                return new Task<>() {
+                return new Task<Void>() {
                     @Override
                     protected Void call() throws UnsupportedEncodingException {
                         if (downloadProgressController == null) {
@@ -725,8 +739,9 @@ public class MainController {
                                                 new ButtonType("Skip once"), new ButtonType("Skip all"), new ButtonType("Cancel Download"));
 
                                         // Make the alert resizable
-                                        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-                                        alert.getDialogPane().setMinWidth(Region.USE_PREF_SIZE);
+                                        DialogPane dialogPane = alert.getDialogPane();
+                                        dialogPane.setMinHeight(Region.USE_PREF_SIZE);
+                                        dialogPane.setMinWidth(900);
                                         Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
                                         stage.setResizable(true);
 
@@ -736,7 +751,7 @@ public class MainController {
 
                                     future.join();
 
-                                    if (result.get().isEmpty() || result.get().get().getText().equals("Cancel Download")) {
+                                    if (!result.get().isPresent() || result.get().get().getText().equals("Cancel Download")) {
                                         Platform.runLater(() -> {
                                             downloadProgressController.disableBtn_abort(true);
                                             downloadProgressController.disableBtn_close(false);
@@ -821,7 +836,7 @@ public class MainController {
     Service<Void> loadTotalFileSizeService = new Service<Void>() {
         @Override
         protected Task<Void> createTask() {
-            return new Task<>() {
+            return new Task<Void>() {
                 @Override
                 protected Void call() {
                     if (!flattenedAllFileList.isEmpty()) {

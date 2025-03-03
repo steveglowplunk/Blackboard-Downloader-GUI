@@ -50,8 +50,8 @@
             </VBox>
             <VBox fx:id="vbox_ButtonList" prefHeight="217.0" prefWidth="265.0" spacing="20.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="551.0" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="40.0">
                <children>
-                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" onDragDropped="#on_btn_LoadCookiesFile_dropped" onDragOver="#on_btn_LoadCookiesFile_dragover" prefHeight="60.0" text="🔐 Click to Load Cookies File For Login...&#10;Or &#10;Drag and Drop Here" textAlignment="CENTER" wrapText="true" />
-                  <Button fx:id="btn_LoadCourse" disable="true" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_LoadCourse_clicked" prefHeight="60.0" text="Load Course Content ▶" />
+                  <Button fx:id="btn_LoadCookiesFile" layoutX="10.0" layoutY="36.0" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_menuItem_OpenCookie_clicked" onDragDropped="#on_btn_LoadCookiesFile_dropped" onDragOver="#on_btn_LoadCookiesFile_dragover" prefHeight="90.0" prefWidth="314.0" text="🔐 Click to Load Cookies File For Login...&#10;Or&#10;Drag and Drop Here" textAlignment="CENTER" wrapText="true" />
+                  <Button fx:id="btn_LoadCourse" disable="true" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#on_btn_LoadCourse_clicked" prefHeight="90.0" prefWidth="314.0" text="Load Course Content ▶" />
                </children>
             </VBox>
          </children>

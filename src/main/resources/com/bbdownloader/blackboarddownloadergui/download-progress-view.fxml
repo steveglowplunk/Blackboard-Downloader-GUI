@@ -21,7 +21,7 @@
             <HBox alignment="CENTER" layoutX="10.0" layoutY="152.0" spacing="5.0">
                <children>
                   <Label text="Download Progress:" />
-                  <ProgressBar fx:id="pBar_downloadProgress" prefHeight="11.0" prefWidth="200.0" progress="0.0" />
+                  <ProgressBar fx:id="pBar_downloadProgress" maxHeight="11.0" minHeight="11.0" prefHeight="11.0" prefWidth="200.0" progress="0.0" />
                   <Label fx:id="label_percentage" text="000%" />
                </children>
             </HBox>

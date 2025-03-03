@@ -9,7 +9,7 @@ May or may not work on other OS that support Java
 
 1. Install a Java Runtime Environment  
    You'll need a JRE equivalent to or newer than Java 8
-   You can install the official one from Oracle
+   You can install the official one from Oracle  
    https://www.java.com/en/download/
 
 

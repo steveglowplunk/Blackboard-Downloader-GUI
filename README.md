@@ -2,19 +2,15 @@
 ## Description  
 A GUI programme that batch downloads files from courses on CUHK's Blackboard platform, so that you don't have to manually click on each file in a browser to download them.  
 Only works for CUHK's Blackboard platform.  
-Note: This programme is NOT produced by CUHK  
 
 ## Setup
-Supported platform: Currently only tested on Windows 10 with JDK 17.0.8  
+Supported platform: Tested on Windows 10 with JDK 17.0.8 and JRE 1.8    
 May or may not work on other OS that support Java  
 
 1. Install a Java Runtime Environment  
-   You'll need a JRE equivalent to or newer than Java 17  
-   You can find one from Azul Zulu:  
-   https://www.azul.com/downloads/?version=java-17-lts&os=windows&package=jre#zulu
-     
-   Alternatively, you can use JDK 17 from Oracle:  
-   https://www.oracle.com/java/technologies/downloads/#java17  
+   You'll need a JRE equivalent to or newer than Java 8
+   You can install the official one from Oracle
+   https://www.java.com/en/download/
 
 
 1. Download a compiled jar executable from [Releases](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/releases).  
@@ -56,7 +52,7 @@ Note: Only available courses (not "locked" on Blackboard's website) can be loade
 ![javaw_2023_08_25_171913](https://github.com/steveglowplunk/Blackboard-Downloader-GUI/assets/28670916/2b04f1ff-efe9-4c45-8b86-ce925c0b7e5d)
 
 ## Build environment  
-The project is built using IntelliJ IDEA, with Amazon Corretto 17 JDK and JavaFX Scene Builder 20.0.0  
+The project is built using IntelliJ IDEA, with Amazon Corretto 8 JDK and JavaFX Scene Builder 20.0.0  
 
 ## Credits  
 The downloader library is modified from here:  
